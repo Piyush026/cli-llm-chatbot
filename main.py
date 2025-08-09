@@ -6,7 +6,7 @@ from llm_client import get_response
 load_dotenv()
 
 @click.command()
-@click.option("--role", "-r", default="friendly", type=click.Choice(["friendly","formal"]), help="Role persona")
+@click.option("--role", "-r", default="system", type=click.Choice(["friendly","formal"]), help="Role persona")
 def cli(role):
     """Start the async CLI chatbot."""
     asyncio.run(chat_loop(role))
@@ -25,7 +25,7 @@ async def chat_loop(role):
 
         context.append({"role": "user", "content": user_input})
         # call the LLM client (async)
-        resp = await get_response(user_input)
+        resp = await get_response(user_input,role)
         # get_response returns a dict with key "content" (or a string fallback)
         assistant_msg = resp.get("content") if isinstance(resp, dict) else str(resp)
         print(f"\nBot: {assistant_msg}\n")

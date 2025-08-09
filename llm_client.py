@@ -10,7 +10,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_ENDPOINT = os.getenv("OPENAI_ENDPOINT")
 
-async def call_openai_chat(messages):
+async def call_openai_chat(messages,role):
     # token = ""
     # endpoint = "https://models.inference.ai.azure.com"
     # model_name = "gpt-4.1"
@@ -21,7 +21,7 @@ async def call_openai_chat(messages):
 
     response = client.chat.completions.create(
         messages=[
-        ChatCompletionSystemMessageParam(content="Expert in everything special in physiology",role="system",
+        ChatCompletionSystemMessageParam(content="Expert in everything special in physiology",role=role,
                                          name="Fedrick"),
         ChatCompletionUserMessageParam(content=messages, role="user"),
 
@@ -33,9 +33,9 @@ async def call_openai_chat(messages):
     content = response.choices[0].message.content
     return {"content": content}
 
-async def get_response(messages):
+async def get_response(messages,role):
     try:
-        return await call_openai_chat(messages)
+        return await call_openai_chat(messages,role)
     except Exception as e:
         # graceful fallback on network / API errors
         return {"content": f"(error calling LLM) {str(e)}"}
