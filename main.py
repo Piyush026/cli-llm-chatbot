@@ -5,13 +5,29 @@ from llm_client import get_response
 
 load_dotenv()
 
-@click.command()
-@click.option("--role", "-r", default="system", type=click.Choice(["friendly","formal"]), help="Role persona")
-def cli(role):
-    """Start the async CLI chatbot."""
-    asyncio.run(chat_loop(role))
 
-async def chat_loop(role):
+PERSONAS = {
+    "friendly": "You are a friendly assistant who uses casual language and emojis.",
+    "formal": "You are a professional assistant. Always be concise and polite.",
+    "sarcastic": "You are a sarcastic assistant. Respond with dry humor.",
+    "mentor": "You are a wise mentor. Give advice and explain reasoning."
+}
+
+@click.command()
+@click.option("--role", "-r", default="formal",
+              type=click.Choice(PERSONAS.keys()),
+              help="Choose chatbot persona")
+
+@click.option(
+    "--memory", "-m",
+    default=5,
+    help="Number of past messages to keep in memory"
+)
+def cli(role, memory):
+    """Start the async CLI chatbot."""
+    asyncio.run(chat_loop(role,memory))
+
+async def chat_loop(role,memory):
     print(f"Starting CLI chatbot with role: {role}\nType 'exit' to quit.\n")
     # basic initial system message (persona)
     context = [{"role": "system", "content": f"You are a {role} assistant. Keep answers short and helpful."}]
@@ -24,8 +40,9 @@ async def chat_loop(role):
             break
 
         context.append({"role": "user", "content": user_input})
-        # call the LLM client (async)
-        resp = await get_response(user_input,role)
+        # last N in memory
+        context = [context[0]] + context[-(memory * 2):]
+        resp = await get_response(user_input,PERSONAS[role],context)
         # get_response returns a dict with key "content" (or a string fallback)
         assistant_msg = resp.get("content") if isinstance(resp, dict) else str(resp)
         print(f"\nBot: {assistant_msg}\n")
