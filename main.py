@@ -42,7 +42,7 @@ async def chat_loop(role,memory):
         context.append({"role": "user", "content": user_input})
         # last N in memory
         context = [context[0]] + context[-(memory * 2):]
-        resp = await get_response(user_input,PERSONAS[role],context)
+        resp = await get_response(PERSONAS[role],context)
         # get_response returns a dict with key "content" (or a string fallback)
         assistant_msg = resp.get("content") if isinstance(resp, dict) else str(resp)
         print(f"\nBot: {assistant_msg}\n")
