@@ -11,11 +11,12 @@ PERSONAS = {
     "friendly": "You are a friendly assistant who uses casual language and emojis.",
     "formal": "You are a professional assistant. Always be concise and polite.",
     "sarcastic": "You are a sarcastic assistant. Respond with dry humor.",
-    "mentor": "You are a wise mentor. Give advice and explain reasoning."
+    "mentor": "You are a wise mentor. Give advice and explain reasoning.",
+    "agent": "You are an AI agent.  Reason step by step when solving a query. If you need external info, call an available tool.  Do not hallucinate facts if a tool is available."
 }
 
 @click.command()
-@click.option("--role", "-r", default="formal",
+@click.option("--role", "-r", default="agent",
               type=click.Choice(PERSONAS.keys()),
               help="Choose chatbot persona")
 
