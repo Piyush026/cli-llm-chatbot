@@ -113,10 +113,10 @@ async def execute_tools(tool_calls, messages):
         func_name = tool_call.function.name
         if func_name in TOOL_FUNCTIONS:
             args = json.loads(tool_call.function.arguments)
-            result = await TOOL_FUNCTIONS[func_name](**args)  # Assume async tools; use asyncio.gather for true parallel
+            result = await TOOL_FUNCTIONS[func_name](**args)
             messages.append({
                 "role": "tool",
-                "tool_call_id": tool_call.id,  # Required for OpenAI API
+                "tool_call_id": tool_call.id,
                 "name": func_name,
                 "content": str(result)
             })
@@ -137,9 +137,9 @@ async def get_response(system_message, context):
             messages.append(msg)  # Add assistant's message
 
             if not msg.tool_calls:
-                return {"content": msg.content}  # Done if no tools called
+                return {"content": msg.content}
 
-            # Execute tools (supports multiple/parallel)
+            # Execute tools parallel
             await execute_tools(msg.tool_calls, messages)
         return {"content": "(Max iterations reached; partial response)"}
     except Exception as e:
