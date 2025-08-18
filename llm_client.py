@@ -17,82 +17,16 @@ HF_TOKEN = os.environ["HF_TOKEN"]
 HF_ENDPOINT = os.environ["HF_ENDPOINT"]
 HF_MODEL = os.environ["HF_MODEL"]
 
-async def call_openai_chat(client,messages):
-    try:
-        response = client.chat.completions.create(
-            messages=messages,
-            tools=[
-                {
-                    "type":"function",
-                    "function":{
-                        "name":"get_weather",
-                        "description": "get current weather for the city",
-                        "parameters":{
-                            "type":"object",
-                            "properties":{
-                                "city":{"type":"string"}
-                            },
-                            "required":["city"]
-                        }
-                    }
-                }
-            ],
-            tool_choice="auto",
-            temperature=1,
-            top_p=0.5,
-            model=OPENAI_MODEL
-        )
-        msg = response.choices[0].message
-        if msg.tool_calls:
-            for tool_call in msg.tool_calls:
-                if tool_call.function.name == "get_weather":
-                    arg = json.loads(tool_call.function.arguments)
-                    result = await get_weather(arg["city"])
-                    messages.append({"role":"tool","content":result})
-                    return {"content": result}
-        return {"content":msg.content}
-    except Exception as E:
-        return {"content": f"(error calling LLM) {str(E)}"}
 
-
-async def call_huggingface_chat(client,messages):
-    try:
-        response = client.chat.completions.create(
-            messages=messages,
-            temperature=1,
-            top_p=0.5,
-            model=HF_MODEL
-        )
-        content = response.choices[0].message.content
-        print(response)
-        return {"content": content}
-    except Exception as E:
-        print(E)
-
-async def get_response(system_message,context):
-    try:
-        if LLM_PROVIDER == "huggingface":
-            client,message =client_and_chat_preparation(provider=True,system_message=system_message,context=context)
-            return await call_huggingface_chat(client,message)
-        else:
-            client, message = client_and_chat_preparation(provider=False, system_message=system_message, context=context)
-            return await call_openai_chat(client, message)
-    except Exception as e:
-        # graceful fallback on network / API errors
-        return {"content": f"(error calling LLM) {str(e)}"}
-
-def client_and_chat_preparation(provider:bool,system_message,context):
-    if provider:
-        client = OpenAI(
-            base_url=HF_ENDPOINT,
-            api_key=HF_TOKEN,
-        )
+def create_client(provider):
+    if provider == "huggingface":
+        return OpenAI(base_url=HF_ENDPOINT, api_key=HF_TOKEN)
     else:
-        client = OpenAI(
-            base_url=OPENAI_ENDPOINT,
-            api_key=OPENAI_API_KEY,
-        )
-    messages = []
+        return OpenAI(base_url=OPENAI_ENDPOINT, api_key=OPENAI_API_KEY)
+
+
+def prepare_messages(system_message, context):
+    messages = [ChatCompletionSystemMessageParam(content=system_message, role="system", name="Fedrick")]
     for msg in context:
         role = msg['role']
         content = msg['content']
@@ -106,11 +40,55 @@ def client_and_chat_preparation(provider:bool,system_message,context):
                 content=content, role="user"
             ))
         elif role == 'assistant':
-            messages.append(ChatCompletionAssistantMessageParam(
-                content=content, role="assistant"
-            ))
+            messages.append(ChatCompletionAssistantMessageParam(content=content, role="assistant"))
         else:
             raise ValueError(f"Unsupported role: {role}")
-    return client, messages
+    return messages
 
 
+async def call_llm_chat(client, messages, model):
+    try:
+        response = client.chat.completions.create(
+            messages=messages,
+            tools=[
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "get_weather",
+                        "description": "get current weather for the city",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "city": {"type": "string"}
+                            },
+                            "required": ["city"]
+                        }
+                    }
+                }
+            ],
+            tool_choice="auto",
+            temperature=1,
+            top_p=0.5,
+            model=model
+        )
+        msg = response.choices[0].message
+        if msg.tool_calls:
+            for tool_call in msg.tool_calls:
+                if tool_call.function.name == "get_weather":
+                    arg = json.loads(tool_call.function.arguments)
+                    result = await get_weather(arg["city"])
+                    messages.append({"role": "tool", "content": result})
+                    return {"content": result}
+        return {"content": msg.content}
+    except Exception as e:
+        return {"content": f"(error calling LLM) {str(e)}"}
+
+
+async def get_response(system_message, context):
+    try:
+        client = create_client(LLM_PROVIDER)
+        messages = prepare_messages(system_message, context)
+        model = HF_MODEL if LLM_PROVIDER == "huggingface" else OPENAI_MODEL
+        return await call_llm_chat(client, messages, model)
+    except Exception as e:
+        return {"content": f"(error calling LLM) {str(e)}"}
