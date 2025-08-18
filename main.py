@@ -2,7 +2,8 @@ import asyncio
 import click
 from dotenv import load_dotenv
 from llm_client import get_response
-
+from colorama import Fore, Style, init
+init(autoreset=True)
 load_dotenv()
 
 
@@ -32,7 +33,7 @@ async def chat_loop(role,memory):
     # basic initial system message (persona)
     context = [{"role": "system", "content": f"You are a {role} assistant. Keep answers short and helpful."}]
     while True:
-        user_input = input("You: ").strip()
+        user_input = input(Fore.BLUE + "You: " + Style.RESET_ALL).strip()
         if not user_input:
             continue
         if user_input.lower() in ("exit", "quit"):
@@ -42,10 +43,10 @@ async def chat_loop(role,memory):
         context.append({"role": "user", "content": user_input})
         # last N in memory
         context = [context[0]] + context[-(memory * 2):]
-        resp = await get_response(user_input,PERSONAS[role],context)
+        resp = await get_response(PERSONAS[role],context)
         # get_response returns a dict with key "content" (or a string fallback)
         assistant_msg = resp.get("content") if isinstance(resp, dict) else str(resp)
-        print(f"\nBot: {assistant_msg}\n")
+        print(Fore.CYAN + "Bot: " + Style.RESET_ALL + Fore.LIGHTRED_EX + assistant_msg + "\n")
         context.append({"role": "assistant", "content": assistant_msg})
 
 if __name__ == "__main__":
