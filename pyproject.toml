@@ -9,7 +9,9 @@ dependencies = [
     "click>=8.2.1",
     "colorama>=0.4.6",
     "openai>=1.99.5",
+    "pydantic-settings>=2.10.1",
     "python-dotenv>=1.1.1",
     "requests>=2.32.4",
     "rich>=14.1.0",
+    "tenacity>=9.1.2",
 ]
