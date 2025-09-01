@@ -8,6 +8,7 @@ dependencies = [
     "aiohttp>=3.12.15",
     "click>=8.2.1",
     "colorama>=0.4.6",
+    "graphviz>=0.21",
     "openai>=1.99.5",
     "pydantic-settings>=2.10.1",
     "python-dotenv>=1.1.1",
